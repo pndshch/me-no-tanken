@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>めの たんけん — Eye Expedition</title>
+<meta name="description" content="4〜9さい向け、世界のキッズアプリでも まれな、目を休める『めの たんけん』。スクリーン疲労時代の こども に、20-20-20 ルールを 体で覚える 3分の めの あそび。">
+<meta property="og:title" content="めの たんけん / Eye Expedition">
+<meta property="og:description" content="目を休めるための、こども向けの3分の あそび。20-20-20ルール、スムーズ追視、サッカード、ピント調節。">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0a1428">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: #050a18;
+    font-family: 'Hiragino Maru Gothic ProN', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+    color: #f5e9c8;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+#stage {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+}
+#sky {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 110%, #1a2e4a 0%, #0a1428 40%, #050a18 100%);
+    transition: background 1.5s ease;
+}
+canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+#ui {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    z-index: 5;
+}
+.ui-top {
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+}
+.lang-switch {
+    pointer-events: auto;
+    display: flex;
+    gap: 2px;
+    background: rgba(8, 14, 28, 0.65);
+    border: 1px solid rgba(245, 233, 200, 0.18);
+    border-radius: 999px;
+    padding: 3px;
+    backdrop-filter: blur(6px);
+}
+.lang-btn {
+    background: transparent; border: none;
+    color: rgba(245, 233, 200, 0.55);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 5px 11px; border-radius: 999px;
+    cursor: pointer; font-family: inherit;
+}
+.lang-btn.active { background: #f0c050; color: #1a1408; }
+#progress {
+    pointer-events: none;
+    display: flex; gap: 6px;
+}
+.dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: rgba(245, 233, 200, 0.18);
+    border: 1px solid rgba(245, 233, 200, 0.3);
+    transition: background 0.4s ease, transform 0.4s ease;
+}
+.dot.done { background: #f0c050; border-color: #f0c050; }
+.dot.now { background: rgba(240, 192, 80, 0.55); transform: scale(1.3); }
+
+.scene-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 24px;
+    pointer-events: none;
+}
+.scene {
+    width: 100%;
+    max-width: 480px;
+    text-align: center;
+    pointer-events: auto;
+}
+.title-jp {
+    font-size: clamp(28px, 8vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+    color: #f5e9c8;
+    text-shadow: 0 2px 16px rgba(240, 192, 80, 0.4);
+}
+.title-en {
+    font-size: clamp(13px, 3.2vw, 16px);
+    color: rgba(245, 233, 200, 0.55);
+    margin-bottom: 24px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+.body-text {
+    font-size: clamp(15px, 4vw, 18px);
+    line-height: 1.7;
+    color: #f5e9c8;
+    margin-bottom: 22px;
+}
+.body-text strong { color: #f0c050; font-weight: 700; }
+.tag-row {
+    display: flex; flex-wrap: wrap;
+    gap: 6px; justify-content: center;
+    margin-bottom: 28px;
+}
+.tag {
+    font-size: 11px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: rgba(240, 192, 80, 0.12);
+    color: #f0c050;
+    border: 1px solid rgba(240, 192, 80, 0.3);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.btn {
+    display: inline-block;
+    background: linear-gradient(180deg, #f0c050 0%, #d99a2a 100%);
+    color: #1a1408;
+    padding: 16px 38px;
+    font-size: 17px;
+    font-weight: 800;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(240, 192, 80, 0.35);
+    font-family: inherit;
+    letter-spacing: 0.5px;
+    transition: transform 0.1s ease;
+}
+.btn:active { transform: scale(0.96); }
+.btn.secondary {
+    background: rgba(245, 233, 200, 0.08);
+    color: #f5e9c8;
+    border: 1px solid rgba(245, 233, 200, 0.2);
+    box-shadow: none;
+}
+.btn-row {
+    display: flex; gap: 10px;
+    justify-content: center; flex-wrap: wrap;
+}
+
+#stage-name {
+    position: absolute;
+    top: 56px; left: 0; right: 0;
+    text-align: center;
+    pointer-events: none;
+    z-index: 6;
+}
+.stage-name-jp {
+    font-size: clamp(20px, 5.5vw, 26px);
+    font-weight: 800;
+    color: #f5e9c8;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6), 0 0 32px rgba(240, 192, 80, 0.4);
+}
+.stage-name-en {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(245, 233, 200, 0.55);
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+#instr {
+    position: absolute;
+    bottom: 28px; left: 0; right: 0;
+    text-align: center;
+    padding: 0 24px;
+    pointer-events: none;
+    z-index: 6;
+}
+.instr-text {
+    display: inline-block;
+    font-size: clamp(15px, 4.2vw, 18px);
+    font-weight: 700;
+    color: #f5e9c8;
+    background: rgba(8, 14, 28, 0.6);
+    padding: 12px 22px;
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(245, 233, 200, 0.15);
+    line-height: 1.5;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    max-width: 92vw;
+}
+
+#countdown {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: clamp(96px, 28vw, 180px);
+    font-weight: 900;
+    color: #f0c050;
+    text-shadow: 0 0 40px rgba(240, 192, 80, 0.6);
+    pointer-events: none;
+    z-index: 4;
+    line-height: 1;
+}
+
+#flash {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(255, 230, 150, 0.7), rgba(255, 230, 150, 0));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+    z-index: 3;
+}
+
+.hidden { display: none !important; }
+
+footer {
+    position: absolute;
+    bottom: 8px; left: 0; right: 0;
+    text-align: center;
+    font-size: 10px;
+    color: rgba(245, 233, 200, 0.3);
+    z-index: 1;
+    pointer-events: none;
+    letter-spacing: 0.5px;
+}
+footer a { color: rgba(245, 233, 200, 0.4); text-decoration: none; pointer-events: auto; }
+
+@media (max-height: 600px) {
+    .title-jp { font-size: 26px; margin-bottom: 4px; }
+    .title-en { font-size: 12px; margin-bottom: 14px; }
+    .body-text { font-size: 14px; margin-bottom: 14px; }
+    .tag-row { margin-bottom: 16px; }
+}
+</style>
+</head>
+<body>
+<div id="stage">
+    <div id="sky"></div>
+    <canvas id="cv"></canvas>
+    <div id="flash"></div>
+    <div id="ui">
+        <div class="ui-top">
+            <div id="progress">
+                <span class="dot" data-i="0"></span>
+                <span class="dot" data-i="1"></span>
+                <span class="dot" data-i="2"></span>
+                <span class="dot" data-i="3"></span>
+                <span class="dot" data-i="4"></span>
+                <span class="dot" data-i="5"></span>
+            </div>
+            <div class="lang-switch">
+                <button class="lang-btn active" data-lang="ja">JP</button>
+                <button class="lang-btn" data-lang="en">EN</button>
+            </div>
+        </div>
+        <div class="scene-wrap">
+            <div class="scene" id="scene-intro">
+                <div class="title-jp" data-i18n="appTitle">めの たんけん</div>
+                <div class="title-en" data-i18n="appTitleEn">Eye Expedition</div>
+                <div class="body-text" data-i18n="introBody">
+                    スマホを みたら、<strong>めが つかれた</strong>こと、ある？<br>
+                    ふくろうの もりに あそびに きて、<br>
+                    めを <strong>3ぷん</strong> やすませてみよう。<br>
+                    <strong>4〜9さい</strong>の こども と おうちの ひと へ。
+                </div>
+                <div class="tag-row">
+                    <span class="tag" data-i18n="tagAge">4〜9歳</span>
+                    <span class="tag" data-i18n="tagRule">20-20-20</span>
+                    <span class="tag" data-i18n="tagAnti">めを やすめる</span>
+                </div>
+                <div class="btn-row">
+                    <button class="btn" id="btn-start" data-i18n="btnStart">はじめる</button>
+                </div>
+            </div>
+            <div class="scene hidden" id="scene-end">
+                <div class="title-jp" data-i18n="endTitle">おつかれさま！</div>
+                <div class="title-en" data-i18n="endTitleEn">Well done!</div>
+                <div class="body-text" id="end-tip" data-i18n="endTip0"></div>
+                <div class="btn-row">
+                    <button class="btn" id="btn-again" data-i18n="btnAgain">もういちど</button>
+                    <button class="btn secondary" id="btn-share" data-i18n="btnShare">ともだちに おしえる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="stage-name" class="hidden">
+        <div class="stage-name-jp" id="stage-name-jp"></div>
+        <div class="stage-name-en" id="stage-name-en"></div>
+    </div>
+    <div id="instr" class="hidden">
+        <div class="instr-text" id="instr-text"></div>
+    </div>
+    <div id="countdown" class="hidden"></div>
+    <footer>
+        © Pinda Lab · <a href="https://pndshch.github.io/" target="_blank">pndshch.github.io</a>
+    </footer>
+</div>
+
+<script>
+'use strict';
+
+/* ─────────────────────────────  i18n  ───────────────────────────── */
+const I18N = {
+    ja: {
+        appTitle: 'めの たんけん',
+        appTitleEn: 'Eye Expedition',
+        introBody: 'スマホを みたら、<strong>めが つかれた</strong>こと、ある？<br>ふくろうの もりに あそびに きて、<br>めを <strong>3ぷん</strong> やすませてみよう。<br><strong>4〜9さい</strong>の こども と おうちの ひと へ。',
+        tagAge: '4〜9歳',
+        tagRule: '20-20-20',
+        tagAnti: 'めを やすめる',
+        btnStart: 'はじめる',
+        btnAgain: 'もういちど',
+        btnShare: 'おしえる',
+        endTitle: 'おつかれさま！',
+        endTitleEn: 'Well done!',
+        s1jp: 'ふくろう の あいさつ', s1en: 'Owl\'s Greeting',
+        s2jp: 'ホタル おっかけ',     s2en: 'Firefly Chase',
+        s3jp: 'ぱっぱの ほし',         s3en: 'Star Flash',
+        s4jp: 'ちかい・とおい',       s4en: 'Near and Far',
+        s5jp: '20びょう やすみ',     s5en: '20-Second Rest',
+        s6jp: 'よあけ',                 s6en: 'Dawn',
+        i1: 'ふくろうと いっしょに、ゆっくり <strong>まばたき</strong>',
+        i2: '<strong>ホタル</strong> を めだけで おっかけよう',
+        i3: 'ひかった <strong>ほし</strong> を タップ！',
+        i4_near: 'ちょうちょ が おおきく → スマホを <strong>ちかく</strong>に',
+        i4_far:  'ちょうちょ が ちいさく → スマホを <strong>とおく</strong>に',
+        i5_pre:  'スマホから めを はなす じかん！',
+        i5_main: 'まどか かべを <strong>20びょう</strong> みよう',
+        i5_tilt: 'スマホを よこに、または したに むけてね',
+        i5_done: 'もどってきた！',
+        i6: 'よが あけたよ。よく できました。',
+        endTips: [
+            '<strong>20-20-20 ルール</strong><br>20ぷん がめんを みたら、<br>20びょう とおく（6m）を みよう。',
+            '<strong>まばたき を わすれずに</strong><br>がめんを みると まばたきが <br>はんぶんに へってしまうよ。',
+            'がめんは、<strong>こぶし2つぶん</strong> いじょう めから はなして もとう。',
+            'そとで <strong>1日 2じかん</strong> あそぶと、めの ピントが よくなるって。',
+            'くらい へやで がめんを みると めが つかれやすいよ。<strong>あかるく</strong> してね。'
+        ],
+        cdReady: 'よういはいいかな？'
+    },
+    en: {
+        appTitle: 'Eye Expedition',
+        appTitleEn: 'めの たんけん',
+        introBody: 'Phone making your <strong>eyes tired</strong>?<br>Visit the owl\'s forest and<br>let your eyes rest for <strong>3 minutes</strong>.<br>For kids <strong>ages 4–9</strong> and a grown-up.',
+        tagAge: 'Ages 4–9',
+        tagRule: '20-20-20',
+        tagAnti: 'Eye-friendly',
+        btnStart: 'Start',
+        btnAgain: 'Again',
+        btnShare: 'Share',
+        endTitle: 'Well done!',
+        endTitleEn: 'おつかれさま！',
+        s1jp: 'Owl\'s Greeting',  s1en: 'ふくろう の あいさつ',
+        s2jp: 'Firefly Chase',    s2en: 'ホタル おっかけ',
+        s3jp: 'Star Flash',       s3en: 'ぱっぱの ほし',
+        s4jp: 'Near and Far',     s4en: 'ちかい・とおい',
+        s5jp: '20-Second Rest',   s5en: '20びょう やすみ',
+        s6jp: 'Dawn',             s6en: 'よあけ',
+        i1: 'Blink slowly with the <strong>owl</strong>',
+        i2: 'Follow the <strong>firefly</strong> with your eyes',
+        i3: 'Tap the <strong>star</strong> when it lights!',
+        i4_near: 'Butterfly grows → bring phone <strong>closer</strong>',
+        i4_far:  'Butterfly shrinks → hold phone <strong>far</strong> away',
+        i5_pre:  'Time to look away!',
+        i5_main: 'Look at a window or wall for <strong>20s</strong>',
+        i5_tilt: 'Tilt the phone sideways or down',
+        i5_done: 'Welcome back!',
+        i6: 'Dawn has come. Lovely work.',
+        endTips: [
+            '<strong>The 20-20-20 rule:</strong><br>Every 20 min on screen,<br>look 20 ft (6 m) away for 20 s.',
+            '<strong>Don\'t forget to blink.</strong><br>Looking at a screen cuts<br>your blink rate in half.',
+            'Hold the screen at least <strong>two fists</strong> away from your face.',
+            'Playing <strong>2 hours outdoors</strong> a day helps your eyes focus better.',
+            'Reading in a dark room tires the eyes. Turn the <strong>lights on</strong>.'
+        ],
+        cdReady: 'Ready?'
+    }
+};
+
+let lang = (navigator.language || 'ja').toLowerCase().startsWith('ja') ? 'ja' : 'en';
+
+function t(k){ return (I18N[lang] && I18N[lang][k]) || (I18N.ja && I18N.ja[k]) || k; }
+function applyI18n(){
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const k = el.getAttribute('data-i18n');
+        const v = t(k);
+        if (v != null) el.innerHTML = v;
+    });
+}
+document.querySelectorAll('.lang-btn').forEach(b => {
+    b.addEventListener('click', () => {
+        lang = b.getAttribute('data-lang');
+        document.querySelectorAll('.lang-btn').forEach(x => x.classList.toggle('active', x === b));
+        applyI18n();
+    });
+});
+
+/* ─────────────────────────────  Canvas  ───────────────────────────── */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = Math.max(1, window.devicePixelRatio || 1);
+function resize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    cv.width = W * DPR;
+    cv.height = H * DPR;
+    cv.style.width = W + 'px';
+    cv.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+resize();
+window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 200));
+
+/* Background stars (always present, brightness modulated by stage) */
+const STARS = [];
+for (let i = 0; i < 60; i++) {
+    STARS.push({ x: Math.random(), y: Math.random() * 0.8, r: 0.5 + Math.random() * 1.6, ph: Math.random() * Math.PI * 2 });
+}
+let bgBrightness = 1.0; // 1 = full night (bright stars), 0 = dawn
+
+function drawStars(now) {
+    for (const s of STARS) {
+        const tw = 0.6 + 0.4 * Math.sin(now / 600 + s.ph);
+        ctx.globalAlpha = Math.max(0, bgBrightness * tw);
+        ctx.fillStyle = '#f5e9c8';
+        ctx.beginPath();
+        ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+}
+
+/* ─────────────────────────────  Audio  ───────────────────────────── */
+let actx = null;
+function audio() {
+    if (!actx) {
+        try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(_) {}
+    }
+    return actx;
+}
+function tone(freq, dur, type='sine', gain=0.06) {
+    const a = audio(); if (!a) return;
+    if (a.state === 'suspended') a.resume();
+    const o = a.createOscillator(); const g = a.createGain();
+    o.type = type; o.frequency.value = freq;
+    o.connect(g); g.connect(a.destination);
+    const t0 = a.currentTime;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(gain, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+    o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function chime() { tone(880, 0.18, 'sine', 0.05); setTimeout(()=>tone(1320, 0.22, 'sine', 0.04), 90); }
+function softHoot() {
+    const a = audio(); if (!a) return;
+    if (a.state === 'suspended') a.resume();
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.value = 440;
+    o.connect(g); g.connect(a.destination);
+    const t0 = a.currentTime;
+    o.frequency.setValueAtTime(380, t0);
+    o.frequency.linearRampToValueAtTime(330, t0 + 0.4);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(0.05, t0 + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.6);
+    o.start(t0); o.stop(t0 + 0.7);
+}
+function tick() { tone(660, 0.05, 'square', 0.02); }
+function chord() {
+    [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 0.4, 'sine', 0.04), i * 70));
+}
+
+/* ─────────────────────────────  Stage Engine  ───────────────────────────── */
+const stages = [
+    { jp: 's1jp', en: 's1en', dur: 16, fn: stageOwl,      instr: 'i1' },
+    { jp: 's2jp', en: 's2en', dur: 22, fn: stageFirefly,  instr: 'i2' },
+    { jp: 's3jp', en: 's3en', dur: 22, fn: stageStars,    instr: 'i3' },
+    { jp: 's4jp', en: 's4en', dur: 24, fn: stageNearFar,  instr: 'i4_near' },
+    { jp: 's5jp', en: 's5en', dur: 24, fn: stageRest,     instr: 'i5_main' },
+    { jp: 's6jp', en: 's6en', dur: 7,  fn: stageDawn,     instr: 'i6' }
+];
+let stageIdx = -1;
+let stageStart = 0;
+let stageRunning = false;
+let stageData = {};
+let rafId = 0;
+
+const $stageName = document.getElementById('stage-name');
+const $stageNameJp = document.getElementById('stage-name-jp');
+const $stageNameEn = document.getElementById('stage-name-en');
+const $instr = document.getElementById('instr');
+const $instrText = document.getElementById('instr-text');
+const $countdown = document.getElementById('countdown');
+const $flash = document.getElementById('flash');
+const $sky = document.getElementById('sky');
+const $sceneIntro = document.getElementById('scene-intro');
+const $sceneEnd = document.getElementById('scene-end');
+
+function setSky(stage) {
+    // Progressively brighten the sky from deep night → dawn
+    const map = [
+        'radial-gradient(ellipse at 50% 110%, #1a2e4a 0%, #0a1428 40%, #050a18 100%)',
+        'radial-gradient(ellipse at 50% 110%, #213b5a 0%, #0e1b30 40%, #060c1c 100%)',
+        'radial-gradient(ellipse at 50% 110%, #2a4868 0%, #142540 40%, #081024 100%)',
+        'radial-gradient(ellipse at 50% 110%, #3a577a 0%, #1a2d4a 40%, #0a1428 100%)',
+        'radial-gradient(ellipse at 50% 100%, #6b5a44 0%, #2a3a55 40%, #101a30 100%)',
+        'radial-gradient(ellipse at 50% 90%, #f0c050 0%, #d97a4a 25%, #4a4368 60%, #1a2040 100%)'
+    ];
+    $sky.style.background = map[Math.min(stage, map.length - 1)];
+    bgBrightness = Math.max(0, 1 - stage * 0.16);
+}
+
+function showInstr(key) {
+    $instrText.innerHTML = t(key);
+    $instr.classList.remove('hidden');
+}
+function hideInstr() { $instr.classList.add('hidden'); }
+function showStageName(s) {
+    $stageNameJp.textContent = lang === 'ja' ? t(s.jp) : t(s.jp);
+    $stageNameEn.textContent = lang === 'ja' ? t(s.en) : t(s.en);
+    $stageName.classList.remove('hidden');
+}
+function hideStageName() { $stageName.classList.add('hidden'); }
+
+function updateProgress() {
+    document.querySelectorAll('.dot').forEach((d, i) => {
+        d.classList.remove('done', 'now');
+        if (i < stageIdx) d.classList.add('done');
+        else if (i === stageIdx) d.classList.add('now');
+    });
+}
+
+function flash() {
+    $flash.style.opacity = '1';
+    setTimeout(() => { $flash.style.opacity = '0'; }, 350);
+}
+
+let lastFrameTs = 0;
+function gameLoop(ts) {
+    if (!stageRunning) return;
+    const dt = (lastFrameTs ? (ts - lastFrameTs) : 16) / 1000;
+    lastFrameTs = ts;
+    const elapsed = (ts - stageStart) / 1000;
+    ctx.clearRect(0, 0, W, H);
+    drawStars(ts);
+    const s = stages[stageIdx];
+    if (s) s.fn(ts, dt, elapsed);
+    if (s && elapsed >= s.dur) {
+        nextStage();
+        return;
+    }
+    rafId = requestAnimationFrame(gameLoop);
+}
+
+function nextStage() {
+    cancelAnimationFrame(rafId);
+    stageRunning = false;
+    if (stageData.cleanup) { stageData.cleanup(); stageData.cleanup = null; }
+    // Always hide the countdown when leaving a stage — it's only used by stage 5
+    $countdown.classList.add('hidden');
+    stageIdx++;
+    if (stageIdx >= stages.length) { endGame(); return; }
+    const s = stages[stageIdx];
+    stageData = {};
+    setSky(stageIdx);
+    updateProgress();
+    showStageName(s);
+    showInstr(s.instr);
+    setTimeout(() => hideStageName(), 1800);
+    if (s.fn === stageDawn) {} // dawn flash handled inside stageDawn
+    chime();
+    stageStart = performance.now();
+    lastFrameTs = 0;
+    stageRunning = true;
+    rafId = requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+    audio(); // unlock on user gesture
+    $sceneIntro.classList.add('hidden');
+    $sceneEnd.classList.add('hidden');
+    stageIdx = -1;
+    setSky(0);
+    nextStage();
+}
+
+function endGame() {
+    cancelAnimationFrame(rafId);
+    stageRunning = false;
+    if (stageData.cleanup) { stageData.cleanup(); stageData.cleanup = null; }
+    hideInstr();
+    hideStageName();
+    $countdown.classList.add('hidden');
+    // Clear canvas so the dawn sun doesn't overlap end-screen text
+    ctx.clearRect(0, 0, W, H);
+    setSky(5);
+    chord();
+    // Pick a random tip
+    const tips = I18N[lang].endTips;
+    document.getElementById('end-tip').innerHTML = tips[Math.floor(Math.random() * tips.length)];
+    $sceneEnd.classList.remove('hidden');
+    updateProgress();
+}
+
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-again').addEventListener('click', startGame);
+document.getElementById('btn-share').addEventListener('click', async () => {
+    const url = location.href;
+    const text = lang === 'ja'
+        ? 'めの たんけん — こども(4〜9さい)向け、めを やすめる 3分の あそび'
+        : 'Eye Expedition — a 3-min eye-rest game for kids ages 4–9';
+    if (navigator.share) {
+        try { await navigator.share({ title: t('appTitle'), text, url }); } catch(_) {}
+    } else {
+        try { await navigator.clipboard.writeText(url); alert(lang === 'ja' ? 'リンクを コピーしました' : 'Link copied'); } catch(_) {}
+    }
+});
+
+/* ──────────────────────  STAGE 1: Owl's Greeting  ────────────────────── */
+function stageOwl(ts, dt, elapsed) {
+    const cx = W / 2, cy = H / 2;
+    const cycle = (elapsed % 4) / 4; // 4-second blink cycle
+    // Eye openness: open most of the time, closes briefly at the end of cycle
+    let open = 1;
+    if (cycle > 0.7 && cycle < 0.85) {
+        const k = (cycle - 0.7) / 0.15;
+        open = 1 - Math.sin(k * Math.PI);
+    }
+    if (cycle > 0.71 && cycle < 0.73 && !stageData.hooted) {
+        softHoot(); stageData.hooted = true;
+    } else if (cycle < 0.5) stageData.hooted = false;
+
+    // Owl body silhouette
+    const bodyR = Math.min(W, H) * 0.22;
+    ctx.save();
+    ctx.translate(cx, cy + bodyR * 0.15);
+    // body
+    ctx.fillStyle = '#3b2a1c';
+    ctx.beginPath();
+    ctx.ellipse(0, bodyR * 0.55, bodyR * 0.95, bodyR * 1.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // head
+    ctx.beginPath();
+    ctx.ellipse(0, -bodyR * 0.1, bodyR * 0.95, bodyR * 0.85, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // ear tufts
+    ctx.beginPath();
+    ctx.moveTo(-bodyR * 0.7, -bodyR * 0.65);
+    ctx.lineTo(-bodyR * 0.5, -bodyR * 0.95);
+    ctx.lineTo(-bodyR * 0.3, -bodyR * 0.65);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(bodyR * 0.7, -bodyR * 0.65);
+    ctx.lineTo(bodyR * 0.5, -bodyR * 0.95);
+    ctx.lineTo(bodyR * 0.3, -bodyR * 0.65);
+    ctx.closePath(); ctx.fill();
+    // belly
+    ctx.fillStyle = '#5a4530';
+    ctx.beginPath();
+    ctx.ellipse(0, bodyR * 0.55, bodyR * 0.55, bodyR * 0.75, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // beak
+    ctx.fillStyle = '#d99a2a';
+    ctx.beginPath();
+    ctx.moveTo(0, bodyR * 0.05);
+    ctx.lineTo(-bodyR * 0.1, bodyR * 0.18);
+    ctx.lineTo(bodyR * 0.1, bodyR * 0.18);
+    ctx.closePath(); ctx.fill();
+
+    // eyes
+    const eyeY = -bodyR * 0.25;
+    const eyeX = bodyR * 0.32;
+    for (const sx of [-1, 1]) {
+        // eye disc
+        ctx.fillStyle = '#f5e9c8';
+        ctx.beginPath();
+        ctx.arc(sx * eyeX, eyeY, bodyR * 0.26, 0, Math.PI * 2);
+        ctx.fill();
+        // pupil (clipped vertically by 'open')
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(sx * eyeX - bodyR * 0.3, eyeY - bodyR * 0.26 * open, bodyR * 0.6, bodyR * 0.52 * open);
+        ctx.clip();
+        ctx.fillStyle = '#1a1408';
+        ctx.beginPath();
+        ctx.arc(sx * eyeX, eyeY, bodyR * 0.16, 0, Math.PI * 2);
+        ctx.fill();
+        // glint
+        ctx.fillStyle = '#f0c050';
+        ctx.beginPath();
+        ctx.arc(sx * eyeX + bodyR * 0.05, eyeY - bodyR * 0.05, bodyR * 0.04, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        // upper lid (closing)
+        if (open < 1) {
+            ctx.fillStyle = '#3b2a1c';
+            ctx.beginPath();
+            ctx.arc(sx * eyeX, eyeY, bodyR * 0.27, Math.PI, Math.PI + Math.PI * (1 - open));
+            ctx.lineTo(sx * eyeX - bodyR * 0.27, eyeY);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(sx * eyeX, eyeY, bodyR * 0.27, -Math.PI * (1 - open), 0);
+            ctx.lineTo(sx * eyeX, eyeY);
+            ctx.fill();
+            // simpler: cover top portion proportionally
+            ctx.fillStyle = '#3b2a1c';
+            ctx.fillRect(sx * eyeX - bodyR * 0.28, eyeY - bodyR * 0.27, bodyR * 0.56, bodyR * 0.27 * (1 - open));
+            ctx.fillRect(sx * eyeX - bodyR * 0.28, eyeY + bodyR * 0.27 * open, bodyR * 0.56, bodyR * 0.27 * (1 - open));
+        }
+    }
+    ctx.restore();
+}
+
+/* ──────────────────────  STAGE 2: Firefly Chase  ────────────────────── */
+function stageFirefly(ts, dt, elapsed) {
+    if (!stageData.trail) stageData.trail = [];
+    const trail = stageData.trail;
+    // Lissajous path
+    const ax = W * 0.36, ay = H * 0.28;
+    const cx = W * 0.5, cy = H * 0.5;
+    const phase = elapsed * 0.55;
+    const x = cx + ax * Math.sin(phase * 2.0);
+    const y = cy + ay * Math.sin(phase * 3.0 + Math.PI / 4);
+    trail.push({ x, y, t: ts });
+    while (trail.length > 60) trail.shift();
+    // sparkle trail
+    for (let i = 0; i < trail.length; i++) {
+        const p = trail[i];
+        const a = i / trail.length;
+        ctx.globalAlpha = a * 0.5;
+        ctx.fillStyle = '#f0e070';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.5 + a * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    // firefly glow
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, 38);
+    glow.addColorStop(0, 'rgba(255, 240, 140, 0.95)');
+    glow.addColorStop(0.4, 'rgba(255, 240, 140, 0.45)');
+    glow.addColorStop(1, 'rgba(255, 240, 140, 0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 38, y - 38, 76, 76);
+    // body
+    ctx.fillStyle = '#fff8c8';
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    // wings flutter
+    const flutter = Math.sin(ts / 60) * 4;
+    ctx.fillStyle = 'rgba(255, 255, 220, 0.35)';
+    ctx.beginPath();
+    ctx.ellipse(x - 6, y - flutter, 5, 3, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + 6, y - flutter, 5, 3, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+/* ──────────────────────  STAGE 3: Star Flash (saccades)  ────────────────────── */
+function stageStars(ts, dt, elapsed) {
+    if (!stageData.stars) {
+        const positions = [];
+        const margin = 80;
+        // Generate well-spaced positions
+        const cells = [
+            [0.18, 0.30], [0.50, 0.20], [0.82, 0.32],
+            [0.20, 0.55], [0.50, 0.50], [0.80, 0.58],
+            [0.30, 0.78], [0.70, 0.75]
+        ];
+        for (const c of cells) positions.push({ x: c[0] * W, y: margin + c[1] * (H - margin * 2) });
+        stageData.stars = positions;
+        stageData.activeIdx = -1;
+        stageData.activeUntil = 0;
+        stageData.popping = []; // pop animations
+        stageData.score = 0;
+        stageData.next = 0;
+    }
+    // Periodically light a new star
+    if (ts > stageData.next) {
+        stageData.activeIdx = Math.floor(Math.random() * stageData.stars.length);
+        stageData.activeUntil = ts + 1800;
+        stageData.next = ts + 1300 + Math.random() * 400;
+    }
+    if (ts > stageData.activeUntil) stageData.activeIdx = -1;
+    // Draw all stars
+    stageData.stars.forEach((p, i) => {
+        const lit = (i === stageData.activeIdx);
+        if (lit) {
+            const r = 22 + Math.sin(ts / 80) * 4;
+            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 2.5);
+            grad.addColorStop(0, 'rgba(255,230,150,1)');
+            grad.addColorStop(0.4, 'rgba(255,200,90,0.55)');
+            grad.addColorStop(1, 'rgba(255,200,90,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(p.x - r * 2.5, p.y - r * 2.5, r * 5, r * 5);
+            drawStarShape(p.x, p.y, r, '#fff5b0');
+        } else {
+            drawStarShape(p.x, p.y, 8, 'rgba(245,233,200,0.35)');
+        }
+    });
+    // Pop animations
+    stageData.popping = stageData.popping.filter(pop => {
+        const age = (ts - pop.t) / 600;
+        if (age > 1) return false;
+        const r = 22 + age * 50;
+        ctx.globalAlpha = 1 - age;
+        ctx.strokeStyle = '#ffe690';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(pop.x, pop.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        return true;
+    });
+    // Score display
+    ctx.fillStyle = 'rgba(245,233,200,0.7)';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('★ ' + stageData.score, W / 2, 110);
+    // Init click handler once
+    if (!stageData._listener) {
+        stageData._listener = (e) => {
+            const r = cv.getBoundingClientRect();
+            const px = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+            const py = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+            if (stageData.activeIdx >= 0) {
+                const p = stageData.stars[stageData.activeIdx];
+                if ((px - p.x) ** 2 + (py - p.y) ** 2 < 60 * 60) {
+                    stageData.popping.push({ x: p.x, y: p.y, t: performance.now() });
+                    stageData.score++;
+                    stageData.activeIdx = -1;
+                    stageData.next = performance.now() + 350;
+                    tone(880 + Math.random() * 200, 0.12, 'triangle', 0.04);
+                }
+            }
+        };
+        cv.addEventListener('pointerdown', stageData._listener);
+        stageData.cleanup = () => cv.removeEventListener('pointerdown', stageData._listener);
+    }
+}
+function drawStarShape(cx, cy, r, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    for (let i = 0; i < 10; i++) {
+        const a = (Math.PI / 5) * i - Math.PI / 2;
+        const rr = i % 2 === 0 ? r : r * 0.42;
+        const x = cx + Math.cos(a) * rr;
+        const y = cy + Math.sin(a) * rr;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+}
+
+/* ──────────────────────  STAGE 4: Near / Far  ────────────────────── */
+function stageNearFar(ts, dt, elapsed) {
+    // 8-second cycles: shrink (far) → grow (near)
+    const cycle = (elapsed % 8) / 8;
+    const half = cycle < 0.5;
+    // size oscillates, with hold periods
+    let scale;
+    if (half) {
+        // 0.0–0.5: tiny → big
+        scale = 0.12 + 0.88 * Math.pow(cycle * 2, 1.2);
+    } else {
+        scale = 0.12 + 0.88 * Math.pow((1 - cycle) * 2, 1.2);
+    }
+    const desiredKey = (scale > 0.55) ? 'i4_near' : 'i4_far';
+    if (stageData.lastKey !== desiredKey) {
+        stageData.lastKey = desiredKey;
+        showInstr(desiredKey);
+    }
+    const cx = W / 2, cy = H / 2;
+    const baseR = Math.min(W, H) * 0.30;     // bigger base size — butterfly spans nicely
+    const r = baseR * scale;
+    const flap = 0.55 + 0.45 * Math.abs(Math.sin(ts / 140)); // flap from narrow→full
+    ctx.save();
+    ctx.translate(cx, cy);
+    // Wings: 4 large blades arranged like a butterfly silhouette
+    for (const sx of [-1, 1]) {
+        // Upper wing — large rounded triangle / petal
+        ctx.fillStyle = '#f0c050';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(
+            sx * r * 0.2, -r * 0.95,
+            sx * r * 1.15 * flap, -r * 0.85,
+            sx * r * 1.0 * flap, -r * 0.15
+        );
+        ctx.bezierCurveTo(
+            sx * r * 0.85 * flap, r * 0.0,
+            sx * r * 0.4, -r * 0.05,
+            0, 0
+        );
+        ctx.fill();
+        // Lower wing — smaller petal
+        ctx.fillStyle = '#d97a4a';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(
+            sx * r * 0.15, r * 0.2,
+            sx * r * 0.95 * flap, r * 0.4,
+            sx * r * 0.78 * flap, r * 0.85
+        );
+        ctx.bezierCurveTo(
+            sx * r * 0.55 * flap, r * 0.95,
+            sx * r * 0.15, r * 0.4,
+            0, 0
+        );
+        ctx.fill();
+        // Wing-eye spots (decorative)
+        ctx.fillStyle = '#fff5c8';
+        ctx.beginPath();
+        ctx.arc(sx * r * 0.65 * flap, -r * 0.45, r * 0.10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#3b2a1c';
+        ctx.beginPath();
+        ctx.arc(sx * r * 0.65 * flap, -r * 0.45, r * 0.045, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    // Body — slim oval
+    ctx.fillStyle = '#3b2a1c';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.08, r * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Head dot
+    ctx.fillStyle = '#3b2a1c';
+    ctx.beginPath();
+    ctx.arc(0, -r * 0.55, r * 0.10, 0, Math.PI * 2);
+    ctx.fill();
+    // Antennae — curling
+    ctx.strokeStyle = '#3b2a1c';
+    ctx.lineWidth = Math.max(1.5, r * 0.025);
+    ctx.lineCap = 'round';
+    for (const sx of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(sx * r * 0.04, -r * 0.62);
+        ctx.bezierCurveTo(
+            sx * r * 0.18, -r * 0.85,
+            sx * r * 0.30, -r * 0.95,
+            sx * r * 0.32, -r * 1.10
+        );
+        ctx.stroke();
+        // antenna tip
+        ctx.fillStyle = '#3b2a1c';
+        ctx.beginPath();
+        ctx.arc(sx * r * 0.32, -r * 1.10, r * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+/* ──────────────────────  STAGE 5: 20-Second Rest  ────────────────────── */
+let orientationGranted = false;
+let orientationData = { tilted: false, alpha: 0, beta: 0, gamma: 0, available: false };
+function handleOrient(e) {
+    orientationData.alpha = e.alpha || 0;
+    orientationData.beta = e.beta || 0;     // x-axis rotation (forward/backward)
+    orientationData.gamma = e.gamma || 0;   // y-axis rotation (left/right)
+    orientationData.available = true;
+    // Phone is "looked away" if it's tilted significantly: gamma >35° or beta >70° or beta<10°
+    const tilted = Math.abs(orientationData.gamma) > 35
+        || orientationData.beta > 70
+        || orientationData.beta < 15;
+    orientationData.tilted = tilted;
+}
+function requestOrientationOnce() {
+    if (typeof DeviceOrientationEvent === 'undefined') return;
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(state => {
+            if (state === 'granted') {
+                window.addEventListener('deviceorientation', handleOrient);
+                orientationGranted = true;
+            }
+        }).catch(() => {});
+    } else {
+        window.addEventListener('deviceorientation', handleOrient);
+        orientationGranted = true;
+    }
+}
+function stageRest(ts, dt, elapsed) {
+    if (!stageData.init) {
+        stageData.init = true;
+        stageData.holdSec = 0;
+        stageData.target = 20;
+        stageData.lastTs = ts;
+        // Try to get orientation permission via the user's recent gesture (start button click).
+        // On iOS Safari this needs a tap, so the start-button click is what unlocks it.
+        if (!orientationGranted) requestOrientationOnce();
+        // For first 2.5s, show pre-prompt
+        stageData.preEnd = elapsed + 2.5;
+        showInstr('i5_pre');
+        // After all hidden
+        setTimeout(() => {
+            // No reliable countdown in iframe; we rely on stage seconds
+        }, 1);
+    }
+    // Pre-prompt period
+    if (elapsed < stageData.preEnd) {
+        // Big text of i5_pre via instr
+        // Add a clock icon
+        drawClock(W / 2, H / 2, Math.min(W, H) * 0.22, ts);
+        return;
+    }
+    if (!stageData.startedTimer) {
+        stageData.startedTimer = true;
+        showInstr('i5_main');
+        $countdown.classList.remove('hidden');
+        stageData.timerStart = ts;
+        stageData.tickedAt = 0;
+        tick();
+    }
+
+    // Determine if user is "looking away":
+    // If orientation API is available, require tilt.
+    // Otherwise, fall back to "trust the kid" — count down anyway.
+    const dts = (ts - stageData.lastTs) / 1000;
+    stageData.lastTs = ts;
+    const usingOrient = orientationData.available;
+    const counts = !usingOrient || orientationData.tilted;
+    if (counts) {
+        stageData.holdSec += dts;
+    }
+    // tick every full second
+    const wholeSec = Math.floor(stageData.holdSec);
+    const remaining = Math.max(0, stageData.target - wholeSec);
+    if (wholeSec !== stageData.tickedAt) {
+        stageData.tickedAt = wholeSec;
+        if (counts) tick();
+    }
+    $countdown.textContent = remaining;
+
+    // Show tilt hint if orientation available but not tilted
+    if (usingOrient && !orientationData.tilted) {
+        showInstr('i5_tilt');
+    } else {
+        showInstr(remaining > 0 ? 'i5_main' : 'i5_done');
+    }
+
+    // Draw a window/wall icon
+    drawWindow(W / 2, H * 0.35, Math.min(W, H) * 0.18, !!counts);
+
+    if (stageData.holdSec >= stageData.target) {
+        // done!
+        $countdown.classList.add('hidden');
+        flash();
+        chord();
+        showInstr('i5_done');
+        // Force-advance soon
+        setTimeout(() => {
+            if (stageRunning) {
+                // Bump elapsed past dur
+                stageStart = performance.now() - stages[4].dur * 1000 - 100;
+            }
+        }, 700);
+    }
+}
+function drawClock(cx, cy, r, ts) {
+    ctx.strokeStyle = 'rgba(245,233,200,0.6)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    // ticks
+    for (let i = 0; i < 12; i++) {
+        const a = (Math.PI * 2 / 12) * i - Math.PI / 2;
+        const x1 = cx + Math.cos(a) * r * 0.85;
+        const y1 = cy + Math.sin(a) * r * 0.85;
+        const x2 = cx + Math.cos(a) * r * 0.95;
+        const y2 = cy + Math.sin(a) * r * 0.95;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+    // hand sweeping
+    const sweep = (ts / 1000) % 60 / 60 * Math.PI * 2 - Math.PI / 2;
+    ctx.strokeStyle = '#f0c050';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(sweep) * r * 0.7, cy + Math.sin(sweep) * r * 0.7);
+    ctx.stroke();
+    ctx.fillStyle = '#f0c050';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx.fill();
+}
+function drawWindow(cx, cy, r, active) {
+    ctx.strokeStyle = active ? '#f0c050' : 'rgba(245,233,200,0.4)';
+    ctx.fillStyle   = active ? 'rgba(240,192,80,0.16)' : 'rgba(245,233,200,0.06)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.rect(cx - r, cy - r, r * 2, r * 2);
+    ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r);
+    ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy);
+    ctx.stroke();
+    // sun rays icon if active
+    if (active) {
+        ctx.strokeStyle = '#f0c050';
+        ctx.lineWidth = 3;
+        const sx = cx + r * 0.45, sy = cy - r * 0.4;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r * 0.18, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let i = 0; i < 8; i++) {
+            const a = (Math.PI * 2 / 8) * i;
+            const x1 = sx + Math.cos(a) * r * 0.26;
+            const y1 = sy + Math.sin(a) * r * 0.26;
+            const x2 = sx + Math.cos(a) * r * 0.4;
+            const y2 = sy + Math.sin(a) * r * 0.4;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        }
+    }
+}
+
+/* ──────────────────────  STAGE 6: Dawn  ────────────────────── */
+function stageDawn(ts, dt, elapsed) {
+    // sun rises
+    const cx = W / 2;
+    const t01 = Math.min(1, elapsed / 5);
+    const cy = H * 0.95 - H * 0.45 * t01;
+    const r = Math.min(W, H) * 0.22;
+    // glow
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * 2.5);
+    grad.addColorStop(0, 'rgba(255,220,140,0.95)');
+    grad.addColorStop(0.4, 'rgba(255,180,100,0.55)');
+    grad.addColorStop(1, 'rgba(255,180,100,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+    // sun disc
+    ctx.fillStyle = '#fff0b0';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    // sun rays
+    ctx.strokeStyle = 'rgba(255,220,140,0.9)';
+    ctx.lineWidth = 4;
+    for (let i = 0; i < 12; i++) {
+        const a = (Math.PI * 2 / 12) * i + ts / 4000;
+        const x1 = cx + Math.cos(a) * r * 1.15;
+        const y1 = cy + Math.sin(a) * r * 1.15;
+        const x2 = cx + Math.cos(a) * r * 1.4;
+        const y2 = cy + Math.sin(a) * r * 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    }
+}
+
+/* Initial render */
+applyI18n();
+ctx.clearRect(0, 0, W, H);
+drawStars(0);
+
+// Idle owl peeks on intro screen for delight
+function idleLoop(ts) {
+    if (stageRunning) return; // gameLoop owns the canvas during play
+    ctx.clearRect(0, 0, W, H);
+    drawStars(ts);
+    requestAnimationFrame(idleLoop);
+}
+requestAnimationFrame(idleLoop);
+
+/* Visibility pause */
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden && stageRunning) {
+        // pause gameplay timer by adjusting stageStart
+        stageData._pauseAt = performance.now();
+    } else if (!document.hidden && stageData && stageData._pauseAt) {
+        const dur = performance.now() - stageData._pauseAt;
+        stageStart += dur;
+        stageData._pauseAt = 0;
+    }
+});
+
+/* Prevent iOS double-tap zoom on UI */
+let lastTouch = 0;
+document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouch < 300) e.preventDefault();
+    lastTouch = now;
+}, { passive: false });
+
+</script>
+</body>
+</html>
