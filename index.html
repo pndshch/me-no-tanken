@@ -1009,19 +1009,11 @@ function stageRest(ts, dt, elapsed) {
         stageData.holdSec = 0;
         stageData.target = 20;
         stageData.lastTs = ts;
-        // Try to get orientation permission via the user's recent gesture (start button click).
-        // On iOS Safari this needs a tap, so the start-button click is what unlocks it.
         if (!orientationGranted) requestOrientationOnce();
-        // For first 2.5s, show pre-prompt
-        stageData.preEnd = elapsed + 2.5;
         showInstr('i5_pre');
-        // After all hidden
-        setTimeout(() => {
-            // No reliable countdown in iframe; we rely on stage seconds
-        }, 1);
     }
-    // Pre-prompt period
-    if (elapsed < stageData.preEnd) {
+    // Pre-prompt period — absolute first 2.5 s of the stage
+    if (elapsed < 2.5) {
         // Big text of i5_pre via instr
         // Add a clock icon
         drawClock(W / 2, H / 2, Math.min(W, H) * 0.22, ts);
@@ -1206,6 +1198,45 @@ document.addEventListener('touchend', e => {
     if (now - lastTouch < 300) e.preventDefault();
     lastTouch = now;
 }, { passive: false });
+
+/* GIF capture harness — only active when URL hash starts with #frame= .
+   Lets the offline capture script jump deterministically to specific
+   moments without affecting normal users. */
+(function frameHarness() {
+    const h = location.hash || '';
+    if (!h.startsWith('#frame=')) return;
+    const params = {};
+    h.slice(1).split('&').forEach(kv => {
+        const [k, v] = kv.split('=');
+        params[k] = v;
+    });
+    const which = params.frame;
+    if (which === 'intro') {
+        return; // already on intro
+    }
+    if (which === 'end') {
+        // Skip to end screen
+        setTimeout(() => {
+            stageIdx = stages.length;
+            endGame();
+        }, 50);
+        return;
+    }
+    if (which === 'stage') {
+        const i = parseInt(params.i || '0', 10);
+        const tms = parseInt(params.t || '0', 10);
+        // Boot stage i with a virtual elapsed of tms
+        setTimeout(() => {
+            audio();
+            $sceneIntro.classList.add('hidden');
+            $sceneEnd.classList.add('hidden');
+            stageIdx = i - 1;
+            nextStage();
+            // Backdate stageStart so elapsed = tms/1000
+            stageStart = performance.now() - tms;
+        }, 60);
+    }
+})();
 
 </script>
 </body>
